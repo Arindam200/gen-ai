@@ -1,6 +1,6 @@
 {
   "name": "gen-ai-chat",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "Ask yout questions to AI and get response in terminal ",
   "main": "index.js",
   "bin": {

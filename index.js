@@ -41,11 +41,15 @@ async function ask(question) {
       if (!userApiKey) {
         requestCount++;
       }
+
+      process.exit(0);
     } catch (error) {
       console.error("Error generating content:", error);
+      process.exit(1);
     }
   } else {
     console.log("You must enter a prompt when calling this function");
+    process.exit(1);
   }
 }
 
@@ -98,4 +102,5 @@ if (question) {
   ask(question);
 } else {
   console.log("Please ask a question!");
+  process.exit(0);
 }
