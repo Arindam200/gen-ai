@@ -4,7 +4,7 @@ This is a Node.js command-line interface (CLI) tool that interacts with the Goog
 
 ## Installation
 
-To install this package, you need to have Node.js and npm installed. You can install the package globally using `npx`:
+To install this package, you need to have Node.js and npm installed. You can install the package globally using npx:
 
 ```sh
 npx gen-ai-chat
@@ -35,6 +35,22 @@ To provide additional context from all files in a directory, use the `-d` flag f
 ```sh
 npx gen-ai-chat "Your question here" -d /path/to/your/directory
 ```
+
+### Interactive Mode
+
+To start the tool in interactive mode, where you can ask multiple questions in a session:
+
+```sh
+npx gen-ai-chat -i
+```
+or
+```sh
+npx gen-ai-chat --interactive
+```
+
+In interactive mode, the prompt `gen-ai-chat>` will appear, indicating that the tool is ready for you to type your question or command. 
+
+To exit interactive mode, type `exit` or `quit` and press Enter.
 
 ## Environment Variables
 
@@ -75,7 +91,7 @@ npx gen-ai-chat "Summarize the content of these files" -d ./example-directory
 
 ## Key Points
 
-- **Presence of `.env` File**: The `.env` file must be present in the directory from which the `npx` command is executed.
+- **Presence of .env File**: The `.env` file must be present in the directory from which the `npx` command is executed.
 - **Loading Environment Variables**: The script uses `require('dotenv').config();` to load the environment variables from the `.env` file.
 - **Accessing the API Key**: The script accesses the API key from `process.env.API_KEY`.
 
