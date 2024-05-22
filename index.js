@@ -3,10 +3,12 @@
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const fs = require("fs");
 const path = require("path");
+const { execSync } = require("child_process");
 require("dotenv").config();
 
 const userApiKey = process.env.API_KEY;
-const myApiKey = "AIzaSyD_XFPL5kqQoVDbfXQSrGrhyqGPGq_n9XI"; 
+const myApiKey = "AIzaSyD_XFPL5kqQoVDbfXQSrGrhyqGPGq_n9XI";
+const version = "0.0.5";
 
 let apiKey;
 let requestCount = 0;
@@ -53,10 +55,86 @@ async function ask(question) {
   }
 }
 
-const args = process.argv.slice(2);
+function isPackageInstalled(packageName) {
+  try {
+    execSync(`npm list -g ${packageName}`, { stdio: 'ignore' });
+    return true;
+  } catch (error) {
+    return false;
+  }
+}
+
+let args;
+
+if (process.argv[1].includes('npx')) {
+  args = process.argv.slice(2);
+} else {
+    if (!isPackageInstalled('gen-ai-chat')) {
+      console.error("Error: 'gen-ai-chat' package is not installed. Please install it using 'npm install -g gen-ai-chat'.");
+      process.exit(1);
+    }
+
+    args = process.argv.slice(1);
+}
+
 let question = args.filter(arg => arg !== "-f" && arg !== "-d" && !arg.startsWith("/")).join(" ");
 let filePath;
 let dirPath;
+
+const helpMessage = `
+\x1b[1mWelcome to Google Generative AI CLI | By Arindam\x1b[0m
+
+Usage: npx gen-ai-chat <question> [options]
+
+Options:
+  -h, --help          Show this help message and exit
+  -v, --version       Show the version number and exit
+  -f <file>           Provide a file path to include its content as context
+  -d <directory>      Provide a directory path to include all files' content as context
+
+Examples:
+  npx gen-ai-chat "What is the capital of France?"
+  npx gen-ai-chat "What is the capital of France?" -f context.txt
+  npx gen-ai-chat "What is the capital of France?" -d contextDir
+
+\x1b[31mWarning: If you don't use the -f or -d flags, the response might be ambiguous.\x1b[0m
+`;
+
+if (args.includes("-h") || args.includes("--help")) {
+  console.log(helpMessage);
+  process.exit(0);
+}
+
+if (args.includes("-v") || args.includes("--version")) {
+  console.log(`gen-ai-chat version: ${version}`);
+  process.exit(0);
+}
+
+const largeFilesAndDirs = [
+  "package-lock.json",
+  "yarn.lock",
+  "node_modules",
+  "dist",
+  "build",
+  ".git",
+  "coverage",
+  "logs",
+  "tmp",
+  "temp"
+];
+
+const largeFileExtensions = [
+  ".log",
+  ".zip",
+  ".tar",
+  ".gz"
+];
+
+function isLargeFileOrDir(filePath) {
+  const fileName = path.basename(filePath);
+  const fileExt = path.extname(filePath);
+  return largeFilesAndDirs.includes(fileName) || largeFileExtensions.includes(fileExt);
+}
 
 
 if (args.includes("-f")) {
@@ -64,8 +142,12 @@ if (args.includes("-f")) {
   if (fileIndex < args.length) {
     filePath = args[fileIndex];
     try {
-      const fileContent = fs.readFileSync(path.resolve(filePath), "utf-8");
-      question = `${question}\n\nContext:\n${fileContent}`;
+      if (isLargeFileOrDir(filePath)) {
+        console.log(`Skipping large file or directory: ${filePath}`);
+      } else {
+        const fileContent = fs.readFileSync(path.resolve(filePath), "utf-8");
+        question = `${question}\n\nContext:\n${fileContent}`;
+      }
     } catch (error) {
       console.error("Error reading file:", error);
       process.exit(1);
@@ -84,8 +166,13 @@ if (args.includes("-d")) {
         const files = fs.readdirSync(path.resolve(dirPath));
         let combinedContent = "";
         files.forEach(file => {
-            const fileContent = fs.readFileSync(path.join(dirPath, file), "utf-8");
+          const filePath = path.join(dirPath, file);
+          if (isLargeFileOrDir(filePath)) {
+            console.log(`Skipping large file or directory: ${file}`);
+          } else {
+            const fileContent = fs.readFileSync(filePath, "utf-8");
             combinedContent += `\n\nContext from ${file}:\n${fileContent}`;
+          }
         });
         question = `${question}\n\nContext:\n${combinedContent}`;
       } catch (error) {
@@ -97,6 +184,14 @@ if (args.includes("-d")) {
       process.exit(1);
     }
   }
+
+  const pathLikeArgs = args.filter(arg => typeof arg === 'string' && (arg.startsWith("/") || arg.includes("\\")));
+
+  if (pathLikeArgs.length > 0 && !args.includes("-f") && !args.includes("-d")) {
+    console.error("Error: Please use the -f flag for file paths or the -d flag for directory paths.");
+    process.exit(1);
+  }
+
 
 if (question) {
   ask(question);

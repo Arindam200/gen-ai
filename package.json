@@ -1,6 +1,6 @@
 {
   "name": "gen-ai-chat",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "Ask yout questions to AI and get response in terminal ",
   "main": "index.js",
   "bin": {
@@ -10,12 +10,18 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
-    "ai"
+    "ai", 
+    "chatbot",
+    "CLI",
+    "terminal",
+    "google",
+    "generative-ai"
   ],
   "author": "Arindam Majumder",
   "license": "ISC",
   "dependencies": {
     "@google/generative-ai": "^0.11.3",
+    "child_process": "^1.0.2",
     "dotenv": "^16.4.5",
     "fs": "^0.0.1-security",
     "path": "^0.12.7"
