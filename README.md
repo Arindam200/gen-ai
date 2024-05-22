@@ -7,7 +7,7 @@ This is a Node.js command-line interface (CLI) tool that interacts with the Goog
 To install this package, you need to have Node.js and npm installed. You can install the package globally using `npx`:
 
 ```sh
-npx gen-ai
+npx gen-ai-chat
 ```
 
 ## Usage
@@ -17,7 +17,7 @@ npx gen-ai
 To ask a question directly from the command line:
 
 ```sh
-npx gen-ai "Your question here"
+npx gen-ai-chat "Your question here"
 ```
 
 ### Using a File for Context
@@ -25,7 +25,7 @@ npx gen-ai "Your question here"
 To provide additional context from a file, use the `-f` flag followed by the file path:
 
 ```sh
-npx gen-ai "Your question here" -f /path/to/your/file.txt
+npx gen-ai-chat "Your question here" -f /path/to/your/file.txt
 ```
 
 ### Using a Directory for Context
@@ -33,7 +33,7 @@ npx gen-ai "Your question here" -f /path/to/your/file.txt
 To provide additional context from all files in a directory, use the `-d` flag followed by the directory path:
 
 ```sh
-npx gen-ai "Your question here" -d /path/to/your/directory
+npx gen-ai-chat "Your question here" -d /path/to/your/directory
 ```
 
 ## Environment Variables
@@ -51,19 +51,19 @@ If you do not provide your own API key, the tool will use a default key with a r
 ### Asking a Question
 
 ```sh
-npx gen-ai "What is the capital of France?"
+npx gen-ai-chat "What is the capital of France?"
 ```
 
 ### Asking a Question with File Context
 
 ```sh
-npx gen-ai "Summarize the content of this file" -f ./example.txt
+npx gen-ai-chat "Summarize the content of this file" -f ./example.txt
 ```
 
 ### Asking a Question with Directory Context
 
 ```sh
-npx gen-ai "Summarize the content of these files" -d ./example-directory
+npx gen-ai-chat "Summarize the content of these files" -d ./example-directory
 ```
 
 ## Error Handling

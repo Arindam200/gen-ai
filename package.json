@@ -1,5 +1,5 @@
 {
-  "name": "gen-ai",
+  "name": "gen-ai-chat",
   "version": "0.0.1",
   "description": "Ask yout questions to AI and get response in terminal ",
   "main": "index.js",
