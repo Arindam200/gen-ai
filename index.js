@@ -9,12 +9,18 @@ require("dotenv").config();
 
 const userApiKey = process.env.API_KEY;
 const myApiKey = "AIzaSyD_XFPL5kqQoVDbfXQSrGrhyqGPGq_n9XI";
-const version = "0.0.5";
+const version = "0.0.6";
 
 let apiKey;
 let requestCount = 0;
 const requestLimit = 10;
 const resetInterval = 60 * 60 * 1000;
+const logDir = path.resolve(__dirname, 'logs');
+
+// Ensure log directory exists
+if (!fs.existsSync(logDir)) {
+  fs.mkdirSync(logDir);
+}
 
 if (userApiKey) {
   apiKey = userApiKey;
@@ -27,7 +33,9 @@ if (userApiKey) {
 
 const genAI = new GoogleGenerativeAI(apiKey);
 
-async function ask(question) {
+let inMemoryLogs = [];
+
+async function ask(question, logToFile = true) {
   if (question) {
     try {
       if (!userApiKey && requestCount >= requestLimit) {
@@ -40,6 +48,11 @@ async function ask(question) {
       const response = result.response;
       const text = response.text();
       console.log(text);
+
+      // Log the question and response
+      if (logToFile) {
+        logChat(question, text);
+      }
 
       if (!userApiKey) {
         requestCount++;
@@ -56,6 +69,19 @@ async function ask(question) {
     console.log("You must enter a prompt when calling this function");
     process.exit(1);
   }
+}
+
+function logChat(question, response) {
+  const timestamp = new Date().toISOString();
+  const logEntry = `[${timestamp}] Question: ${question}\nResponse: ${response}\n\n`;
+  inMemoryLogs.push(logEntry);
+}
+
+function writeLogsToFile() {
+  const timestamp = new Date().toISOString();
+  const logFilePath = path.join(logDir, `${timestamp.split('T')[0]}.log`);
+  fs.appendFileSync(logFilePath, inMemoryLogs.join(''), 'utf8');
+  console.log(`Logs have been written to ${logFilePath}`);
 }
 
 function isPackageInstalled(packageName) {
@@ -80,9 +106,10 @@ if (process.argv[1].includes('npx')) {
   args = process.argv.slice(1);
 }
 
-let question = args.filter(arg => arg !== "-f" && arg !== "-d" && !arg.startsWith("/")).join(" ");
+let question = args.filter(arg => arg !== "-f" && arg !== "-d" && arg !== "--no-log-to-file" && !arg.startsWith("/")).join(" ");
 let filePath;
 let dirPath;
+const logToFile = !args.includes("--no-log-to-file");
 
 const helpMessage = `
 \x1b[1mWelcome to Google Generative AI CLI | By Arindam\x1b[0m
@@ -95,11 +122,14 @@ Options:
   -f <file>           Provide a file path to include its content as context
   -d <directory>      Provide a directory path to include all files' content as context
   -i, --interactive   Start interactive mode
+  --no-log-to-file    Disable logging the chat to a file
+  --write-logs        Write in-memory logs to a file
 
 Examples:
   npx gen-ai-chat "What is the capital of France?"
   npx gen-ai-chat "What is the capital of France?" -f context.txt
   npx gen-ai-chat "What is the capital of France?" -d contextDir
+  npx gen-ai-chat "What is the capital of France?" --no-log-to-file
 
 \x1b[31mWarning: If you don't use the -f or -d flags, the response might be ambiguous.\x1b[0m
 `;
@@ -111,6 +141,11 @@ if (args.includes("-h") || args.includes("--help")) {
 
 if (args.includes("-v") || args.includes("--version")) {
   console.log(`gen-ai-chat version: ${version}`);
+  process.exit(0);
+}
+
+if (args.includes("--write-logs")) {
+  writeLogsToFile();
   process.exit(0);
 }
 
@@ -209,7 +244,7 @@ if (args.includes("-i") || args.includes("--interactive")) {
     if (input.toLowerCase() === 'exit') {
       rl.close();
     } else {
-      ask(input);
+      ask(input, logToFile);
       rl.prompt();
     }
   }).on('close', () => {
@@ -218,7 +253,7 @@ if (args.includes("-i") || args.includes("--interactive")) {
   });
 } else {
   if (question) {
-    ask(question);
+    ask(question, logToFile);
   } else {
     console.log("Please ask a question!");
     process.exit(0);

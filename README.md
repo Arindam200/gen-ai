@@ -43,7 +43,9 @@ To start the tool in interactive mode, where you can ask multiple questions in a
 ```sh
 npx gen-ai-chat -i
 ```
+
 or
+
 ```sh
 npx gen-ai-chat --interactive
 ```
@@ -51,6 +53,14 @@ npx gen-ai-chat --interactive
 In interactive mode, the prompt `gen-ai-chat>` will appear, indicating that the tool is ready for you to type your question or command. 
 
 To exit interactive mode, type `exit` or `quit` and press Enter.
+
+### Writing Logs to File
+
+By default, logs are stored in memory. To write the in-memory logs to a file, use the `--write-logs` option:
+
+```sh
+npx gen-ai-chat --write-logs
+```
 
 ## Environment Variables
 
@@ -81,6 +91,14 @@ npx gen-ai-chat "Summarize the content of this file" -f ./example.txt
 ```sh
 npx gen-ai-chat "Summarize the content of these files" -d ./example-directory
 ```
+
+### Writing Logs to a File
+
+```sh
+npx gen-ai-chat --write-logs
+```
+
+This command will write all in-memory logs to a file in the `logs` directory.
 
 ## Error Handling
 
