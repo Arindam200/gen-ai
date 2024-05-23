@@ -11,15 +11,14 @@ require("dotenv").config();
 const userApiKey = process.env.API_KEY;
 const defApiKey = "QUl6YVN5RF9fb2VKRURCelVQZmVERExCa1U5bk9vbWR5ZVlrVVFz";
 const myApiKey = Buffer.from(defApiKey, 'base64').toString('utf-8');
-const version = "0.0.9";
+const version = "0.0.10";
 
 let apiKey;
 let requestCount = 0;
 const requestLimit = 10;
 const resetInterval = 60 * 60 * 1000;
 
-// Ensure log directory exists
-
+const interactiveMode = process.argv.includes("-i") || process.argv.includes("--interactive");
 
 if (userApiKey) {
   apiKey = userApiKey;
