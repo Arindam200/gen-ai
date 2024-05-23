@@ -11,18 +11,15 @@ require("dotenv").config();
 const userApiKey = process.env.API_KEY;
 const defApiKey = "QUl6YVN5RF9YRlBMNWtxUW9WRGJmWFFTckdyaHlxR1BHcV9uOVhJ";
 const myApiKey = Buffer.from(defApiKey, 'base64').toString('utf-8');
-const version = "0.0.7";
+const version = "0.0.8";
 
 let apiKey;
 let requestCount = 0;
 const requestLimit = 10;
 const resetInterval = 60 * 60 * 1000;
-const logDir = path.resolve(__dirname, 'logs');
 
 // Ensure log directory exists
-if (!fs.existsSync(logDir)) {
-  fs.mkdirSync(logDir);
-}
+
 
 if (userApiKey) {
   apiKey = userApiKey;
@@ -80,6 +77,11 @@ function logChat(question, response) {
 }
 
 function writeLogsToFile() {
+
+  const logDir = path.resolve(__dirname, 'logs');
+  if (!fs.existsSync(logDir)) {
+    fs.mkdirSync(logDir);
+  }
   const timestamp = new Date().toISOString();
   const logFilePath = path.join(logDir, `${timestamp.split('T')[0]}.log`);
   fs.appendFileSync(logFilePath, inMemoryLogs.join(''), 'utf8');
