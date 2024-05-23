@@ -5,11 +5,13 @@ const fs = require("fs");
 const path = require("path");
 const { execSync } = require("child_process");
 const readline = require("readline");
+const Buffer = require('buffer').Buffer;
 require("dotenv").config();
 
 const userApiKey = process.env.API_KEY;
-const myApiKey = "AIzaSyD_XFPL5kqQoVDbfXQSrGrhyqGPGq_n9XI";
-const version = "0.0.6";
+const defApiKey = "QUl6YVN5RF9YRlBMNWtxUW9WRGJmWFFTckdyaHlxR1BHcV9uOVhJ";
+const myApiKey = Buffer.from(defApiKey, 'base64').toString('utf-8');
+const version = "0.0.7";
 
 let apiKey;
 let requestCount = 0;
