@@ -1,6 +1,6 @@
 # Google Generative AI CLI
 
-This is a Node.js command-line interface (CLI) tool that interacts with the Google Generative AI API to generate content based on user input. The tool allows you to ask questions directly or provide context from files or directories.
+This is a Node.js command-line interface (CLI) tool created by Arindam that interacts with the Google Generative AI API to generate content based on user input. The tool allows you to ask questions directly or provide context from files or directories.
 
 ## Installation
 
@@ -54,6 +54,31 @@ In interactive mode, the prompt `gen-ai-chat>` will appear, indicating that the 
 
 To exit interactive mode, type `exit` or `quit` and press Enter.
 
+### Choosing Your Favorite Model
+
+You can choose your favorite model interactively by using the `--choose-model` option:
+
+```sh
+npx gen-ai-chat --choose-model
+```
+
+This command will prompt you to select a model from the available options:
+
+```
+? Please select a model: (Use arrow keys)
+❯ gemini-pro 
+  gemini-1.5-flash-latest 
+  gemini-1.5-pro-latest 
+  gemini-pro-vision 
+  text-embedding-004
+```
+
+Alternatively, you can specify the model directly using the `--model` option followed by the model name:
+
+```sh
+npx gen-ai-chat "Your question here" --model gemini-1.5-flash-latest
+```
+
 ### Writing Logs to File
 
 By default, logs are stored in memory. To write the in-memory logs to a file, use the `--write-logs` option:
@@ -92,6 +117,18 @@ npx gen-ai-chat "Summarize the content of this file" -f ./example.txt
 npx gen-ai-chat "Summarize the content of these files" -d ./example-directory
 ```
 
+### Choosing a Model
+
+```sh
+npx gen-ai-chat --choose-model
+```
+
+or
+
+```sh
+npx gen-ai-chat "Your question here" --model gemini-1.5-flash-latest
+```
+
 ### Writing Logs to a File
 
 ```sh
@@ -106,12 +143,17 @@ This command will write all in-memory logs to a file in the `logs` directory.
 - If the file path provided with the `-f` flag is invalid, an error message will be displayed.
 - If the directory path provided with the `-d` flag is invalid, an error message will be displayed.
 - If the request limit is reached and no user API key is provided, a message will be displayed indicating that the request limit has been reached.
+- If the selected model fails, the tool will fallback to `gemini-pro` and try again.
+- If the API key is missing or invalid, an error message will be displayed.
+- If there is a network issue, an error message will be displayed indicating the problem.
+- If the response from the API is malformed or unexpected, an error message will be displayed.
 
 ## Key Points
 
 - **Presence of .env File**: The `.env` file must be present in the directory from which the `npx` command is executed.
 - **Loading Environment Variables**: The script uses `require('dotenv').config();` to load the environment variables from the `.env` file.
 - **Accessing the API Key**: The script accesses the API key from `process.env.API_KEY`.
+- **Model Fallback**: If the selected model fails, the tool will fallback to `gemini-pro` and try again.
 
 By ensuring the `.env` file is in the correct location and the script is configured to load it, the script will be able to access the API key when run with `npx`.
 
