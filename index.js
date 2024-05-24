@@ -13,7 +13,7 @@ require("dotenv").config();
 const userApiKey = process.env.API_KEY;
 const defApiKey = "QUl6YVN5RF9fb2VKRURCelVQZmVERExCa1U5bk9vbWR5ZVlrVVFz";
 const myApiKey = Buffer.from(defApiKey, 'base64').toString('utf-8');
-const version = "0.1.0";
+const version = "0.1.1";
 
 let apiKey;
 let requestCount = 0;
@@ -55,7 +55,7 @@ const promptUserForModel = async () => {
 };
 
 if (args.includes("--choose-model")) {
-  selectedModel = await promptUserForModel();
+  selectedModel = promptUserForModel();
 } else {
   const modelIndex = args.indexOf("--model");
   if (modelIndex !== -1 && modelIndex + 1 < args.length) {
