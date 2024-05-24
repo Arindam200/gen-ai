@@ -16,7 +16,7 @@ dotenv.config();
 const userApiKey = process.env.API_KEY;
 const defApiKey = "QUl6YVN5RF9fb2VKRURCelVQZmVERExCa1U5bk9vbWR5ZVlrVVFz"; // Replace with your actual default API key
 const myApiKey = Buffer.from(defApiKey, 'base64').toString('utf-8');
-const version = "0.1.11";
+const version = "0.1.13";
 
 let apiKey;
 let requestCount = 0;
@@ -143,14 +143,13 @@ const isPackageInstalled = (packageName) => {
 const main = async () => {
   let args;
 
-  if (process.argv[1].includes('npx')) {
+  if (process.argv[1].includes('npx') || process.argv[0].includes('node')) {
     args = process.argv.slice(2);
   } else {
     if (!isPackageInstalled('gen-ai-chat')) {
       console.error("Error: 'gen-ai-chat' package is not installed. Please install it using 'npm install -g gen-ai-chat'.");
       process.exit(1);
     }
-
     args = process.argv.slice(1);
   }
 
@@ -321,12 +320,12 @@ Examples:
     }
   }
 
-  const pathLikeArgs = args.filter(arg => typeof arg === 'string' && (arg.startsWith("/") || arg.includes("\\")));
+  // const pathLikeArgs = args.filter(arg => typeof arg === 'string' && (arg.startsWith("/") || arg.includes("\\")));
 
-  if (pathLikeArgs.length > 0 && !args.includes("-f") && !args.includes("-d")) {
-    console.error(chalk.red("Error: Please use the -f flag for file paths or the -d flag for directory paths."));
-    process.exit(1);
-  }
+  // if (pathLikeArgs.length > 0 && !args.includes("-f") && !args.includes("-d")) {
+  //   console.error(chalk.red("Error: Please use the -f flag for file paths or the -d flag for directory paths."));
+  //   process.exit(1);
+  // }
 
   if (args.includes("-i") || args.includes("--interactive")) {
     const rl = readline.createInterface({
