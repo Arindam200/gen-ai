@@ -14,9 +14,9 @@ import inquirer from "inquirer";
 dotenv.config();
 
 const userApiKey = process.env.API_KEY;
-const defApiKey = "your-default-api-key"; // Replace with your actual default API key
+const defApiKey = "QUl6YVN5RF9fb2VKRURCelVQZmVERExCa1U5bk9vbWR5ZVlrVVFz"; // Replace with your actual default API key
 const myApiKey = Buffer.from(defApiKey, 'base64').toString('utf-8');
-const version = "0.1.10";
+const version = "0.1.11";
 
 let apiKey;
 let requestCount = 0;
