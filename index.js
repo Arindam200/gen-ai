@@ -10,14 +10,15 @@ import ora, { spinners } from "ora";
 import dotenv from "dotenv";
 import chalk from "chalk";
 import inquirer from "inquirer";
-import { fileURLToPath } from 'url'
+import { fileURLToPath } from 'url';
+import latestVersion from 'latest-version'; // Import latest-version
 
 dotenv.config();
 
 const userApiKey = process.env.API_KEY;
 const defApiKey = "QUl6YVN5QVFPVUY3czUzLU9QTVZjbXlJQ0VoMUxlMDhsdlJEcXo0"; // Replace with your actual default API key
 const myApiKey = Buffer.from(defApiKey, 'base64').toString('utf-8');
-const version = "0.1.14";
+const version = "0.1.15";
 
 let apiKey;
 let requestCount = 0;
@@ -142,7 +143,21 @@ const isPackageInstalled = (packageName) => {
   }
 };
 
+const checkForUpdates = async () => {
+  try {
+    const latest = await latestVersion('gen-ai-chat');
+    if (latest !== version) {
+      console.log(chalk.yellow(`A new version of gen-ai-chat is available: ${latest}. You are using version: ${version}.`));
+      console.log(chalk.yellow(`To update, run: npm install -g gen-ai-chat@${latest}`));
+    }
+  } catch (error) {
+    console.error(chalk.red("Error checking for updates:"), error);
+  }
+};
+
 const main = async () => {
+  await checkForUpdates(); // Check for updates at the start
+
   let args;
 
   if (process.argv[1].includes('npx') || process.argv[0].includes('node')) {
@@ -321,13 +336,6 @@ Examples:
       process.exit(1);
     }
   }
-
-  // const pathLikeArgs = args.filter(arg => typeof arg === 'string' && (arg.startsWith("/") || arg.includes("\\")));
-
-  // if (pathLikeArgs.length > 0 && !args.includes("-f") && !args.includes("-d")) {
-  //   console.error(chalk.red("Error: Please use the -f flag for file paths or the -d flag for directory paths."));
-  //   process.exit(1);
-  // }
 
   if (args.includes("-i") || args.includes("--interactive")) {
     const rl = readline.createInterface({
