@@ -10,13 +10,14 @@ import ora, { spinners } from "ora";
 import dotenv from "dotenv";
 import chalk from "chalk";
 import inquirer from "inquirer";
+import { fileURLToPath } from 'url'
 
 dotenv.config();
 
 const userApiKey = process.env.API_KEY;
-const defApiKey = "QUl6YVN5RF9fb2VKRURCelVQZmVERExCa1U5bk9vbWR5ZVlrVVFz"; // Replace with your actual default API key
+const defApiKey = "QUl6YVN5QVFPVUY3czUzLU9QTVZjbXlJQ0VoMUxlMDhsdlJEcXo0"; // Replace with your actual default API key
 const myApiKey = Buffer.from(defApiKey, 'base64').toString('utf-8');
-const version = "0.1.13";
+const version = "0.1.14";
 
 let apiKey;
 let requestCount = 0;
@@ -75,7 +76,7 @@ const ask = async (question, logToFile = true) => {
       return;
     }
 
-    let model = genAI.getGenerativeModel({ model: selectedModel });
+    let model = await genAI.getGenerativeModel({ model: selectedModel });
     let result;
     let response;
     let text;
@@ -121,6 +122,7 @@ const logChat = (question, response) => {
 };
 
 const writeLogsToFile = () => {
+  const __dirname = path.dirname(fileURLToPath(import.meta.url));
   const logDir = path.resolve(__dirname, 'logs');
   if (!fs.existsSync(logDir)) {
     fs.mkdirSync(logDir);
