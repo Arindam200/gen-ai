@@ -11,14 +11,16 @@ import dotenv from "dotenv";
 import chalk from "chalk";
 import inquirer from "inquirer";
 import { fileURLToPath } from 'url';
-import latestVersion from 'latest-version'; // Import latest-version
+import latestVersion from 'latest-version';
+import axios from 'axios'; // Import axios
+import hljs from 'highlight.js';
 
 dotenv.config();
 
 const userApiKey = process.env.API_KEY;
 const defApiKey = "QUl6YVN5QVFPVUY3czUzLU9QTVZjbXlJQ0VoMUxlMDhsdlJEcXo0"; // Replace with your actual default API key
 const myApiKey = Buffer.from(defApiKey, 'base64').toString('utf-8');
-const version = "0.1.15";
+const version = "0.2.0";
 
 let apiKey;
 let requestCount = 0;
@@ -63,7 +65,52 @@ const selectModel = async () => {
   console.log(chalk.green("Selected model:") + chalk.white(selectedModel));
 };
 
-const ask = async (question, logToFile = true) => {
+const searchStackOverflow = async (query) => {
+  const spinner = ora('Searching Stack Overflow...').start();
+  try {
+    const response = await axios.get('https://api.stackexchange.com/2.3/search/advanced', {
+      params: {
+        order: 'desc',
+        sort: 'relevance',
+        q: query,
+        site: 'stackoverflow'
+      }
+    });
+    spinner.succeed(chalk.green("Stack Overflow search completed."));
+    return response.data.items.map(item => item.link);
+  } catch (error) {
+    spinner.fail(chalk.red("Error searching Stack Overflow:"));
+    console.error(chalk.red(error.message));
+    return [];
+  }
+};
+
+const formatResponse = (text) => {
+  const lines = text.split('\n');
+  let formattedText = '';
+  let inCodeBlock = false;
+  lines.forEach(line => {
+    if (line.startsWith('# ')) {
+      formattedText += chalk.bold(line) + '\n';
+    } else if (line.startsWith(' ```')) {
+      inCodeBlock = !inCodeBlock;
+      formattedText += '```' ;  
+    } else if (inCodeBlock) {
+      formattedText += hljs.highlightAuto(line).value + '\n';
+    } else if (line.startsWith('* ')) {
+      formattedText += chalk.green('• ') + line.slice(2) + '\n';
+    } else if (line.startsWith('**') && line.endsWith('**')) {
+      formattedText += chalk.bold(line.slice(2, -2)) + '\n';
+    } else {
+      // Regular text
+      formattedText += line + '\n';
+    }
+  });
+
+  return formattedText;
+};
+
+const ask = async (question, logToFile = true, searchSO = false) => {
   if (!question) {
     console.log(chalk.red("You must enter a prompt when calling this function"));
     process.exit(1);
@@ -95,11 +142,23 @@ const ask = async (question, logToFile = true) => {
     }
 
     spinner.succeed(chalk.green("Response generated successfully!"));
-    console.log(chalk.blue.bold("\nResponse:") + chalk.white(text));
+    const formattedText = formatResponse(text);
+    console.log(chalk.blue.bold("\nResponse:\n") + chalk.white(formattedText));
 
     // Log the question and response
     if (logToFile) {
       logChat(question, text);
+    }
+
+    // Check if the Stack Overflow search flag is present
+    if (searchSO) {
+      const stackOverflowLinks = await searchStackOverflow(question);
+      if (stackOverflowLinks.length > 0) {
+        console.log(chalk.blue.bold("\nStack Overflow Links:"));
+        stackOverflowLinks.forEach(link => console.log(chalk.white(link)));
+      } else {
+        console.log(chalk.yellow("No relevant Stack Overflow links found."));
+      }
     }
 
     if (!userApiKey) {
@@ -198,11 +257,14 @@ const main = async () => {
     arg !== "--interactive" && 
     arg !== "--write-logs" && 
     arg !== "--choose-model" && 
+    arg !== "--stackoverflow" && 
+    arg !== "-s" && 
     !arg.startsWith("/")
   ).join(" ");
   let filePath;
   let dirPath;
   const logToFile = !args.includes("--no-log-to-file");
+  const searchSO = args.includes("--stackoverflow") || args.includes("-s");
 
   const helpMessage = `
 \x1b[1mWelcome to Google Generative AI CLI | By Arindam\x1b[0m
@@ -218,6 +280,7 @@ Options:
   --no-log-to-file    Disable logging the chat to a file
   --write-logs        Write in-memory logs to a file
   --choose-model      Choose a model interactively
+  --stackoverflow, -s Search Stack Overflow for relevant links
 
 Examples:
   npx gen-ai-chat "What is the capital of France?"
@@ -227,6 +290,7 @@ Examples:
   npx gen-ai-chat -i
   npx gen-ai-chat --choose-model
   npx gen-ai-chat --write-logs
+  npx gen-ai-chat "How to fix a TypeError in JavaScript?" --stackoverflow
 
 \x1b[31mWarning: If you don't use the -f or -d flags, the response might be ambiguous.\x1b[0m
 `;
@@ -369,7 +433,7 @@ Examples:
           rl.prompt();
           break;
         default:
-          await ask(input, logToFile);
+          await ask(input, logToFile, searchSO);
           rl.prompt();
           break;
       }
@@ -379,7 +443,7 @@ Examples:
     });
   } else {
     if (question) {
-      await ask(question, logToFile);
+      await ask(question, logToFile, searchSO);
     } else {
       console.log("Please ask a question!");
       process.exit(0);
