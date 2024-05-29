@@ -18,9 +18,9 @@ import hljs from 'highlight.js';
 dotenv.config();
 
 const userApiKey = process.env.API_KEY;
-const defApiKey = "QUl6YVN5QVFPVUY3czUzLU9QTVZjbXlJQ0VoMUxlMDhsdlJEcXo0"; // Replace with your actual default API key
+const defApiKey = "QUl6YVN5QVFPVUY3czUzLU9QTVZjbXlJQ0VoMUxlMDhsdlJEcXo0";
 const myApiKey = Buffer.from(defApiKey, 'base64').toString('utf-8');
-const version = "0.2.0";
+const version = "0.2.1";
 
 let apiKey;
 let requestCount = 0;
@@ -39,8 +39,6 @@ if (userApiKey) {
 }
 
 const genAI = new GoogleGenerativeAI(apiKey);
-
-let inMemoryLogs = [];
 
 const defaultModel = "gemini-pro";
 let selectedModel = defaultModel;
@@ -92,9 +90,9 @@ const formatResponse = (text) => {
   lines.forEach(line => {
     if (line.startsWith('# ')) {
       formattedText += chalk.bold(line) + '\n';
-    } else if (line.startsWith(' ```')) {
+    } else if (line.startsWith('```')) {
       inCodeBlock = !inCodeBlock;
-      formattedText += '```' ;  
+      formattedText += '```';
     } else if (inCodeBlock) {
       formattedText += hljs.highlightAuto(line).value + '\n';
     } else if (line.startsWith('* ')) {
@@ -178,10 +176,10 @@ const ask = async (question, logToFile = true, searchSO = false) => {
 const logChat = (question, response) => {
   const timestamp = new Date().toISOString();
   const logEntry = `[${timestamp}] Question: ${question}\nResponse: ${response}\n\n`;
-  inMemoryLogs.push(logEntry);
+  writeLogToFile(logEntry);
 };
 
-const writeLogsToFile = () => {
+const writeLogToFile = (logEntry) => {
   const __dirname = path.dirname(fileURLToPath(import.meta.url));
   const logDir = path.resolve(__dirname, 'logs');
   if (!fs.existsSync(logDir)) {
@@ -189,7 +187,7 @@ const writeLogsToFile = () => {
   }
   const timestamp = new Date().toISOString();
   const logFilePath = path.join(logDir, `${timestamp.split('T')[0]}.log`);
-  fs.appendFileSync(logFilePath, inMemoryLogs.join(''), 'utf8');
+  fs.appendFileSync(logFilePath, logEntry, 'utf8');
   console.log(`Logs have been written to ${logFilePath}`);
 };
 
@@ -220,7 +218,7 @@ const main = async () => {
   let args;
 
   if (process.argv[1].includes('npx') || process.argv[0].includes('node')) {
-    args = process.argv.slice(2);
+  args = process.argv.slice(2);
   } else {
     if (!isPackageInstalled('gen-ai-chat')) {
       console.error("Error: 'gen-ai-chat' package is not installed. Please install it using 'npm install -g gen-ai-chat'.");
@@ -263,7 +261,6 @@ const main = async () => {
   ).join(" ");
   let filePath;
   let dirPath;
-  const logToFile = !args.includes("--no-log-to-file");
   const searchSO = args.includes("--stackoverflow") || args.includes("-s");
 
   const helpMessage = `
@@ -277,7 +274,6 @@ Options:
   -f <file>           Provide a file path to include its content as context
   -d <directory>      Provide a directory path to include all files' content as context
   -i, --interactive   Start interactive mode
-  --no-log-to-file    Disable logging the chat to a file
   --write-logs        Write in-memory logs to a file
   --choose-model      Choose a model interactively
   --stackoverflow, -s Search Stack Overflow for relevant links
@@ -286,7 +282,6 @@ Examples:
   npx gen-ai-chat "What is the capital of France?"
   npx gen-ai-chat "What is the capital of France?" -f context.txt
   npx gen-ai-chat "What is the capital of France?" -d contextDir
-  npx gen-ai-chat "What is the capital of France?" --no-log-to-file
   npx gen-ai-chat -i
   npx gen-ai-chat --choose-model
   npx gen-ai-chat --write-logs
@@ -306,7 +301,7 @@ Examples:
   }
 
   if (args.includes("--write-logs")) {
-    writeLogsToFile();
+    console.log(chalk.red("No in-memory logs to write."));
     process.exit(0);
   }
 
@@ -433,7 +428,7 @@ Examples:
           rl.prompt();
           break;
         default:
-          await ask(input, logToFile, searchSO);
+          await ask(input, true, searchSO);
           rl.prompt();
           break;
       }
@@ -443,7 +438,17 @@ Examples:
     });
   } else {
     if (question) {
-      await ask(question, logToFile, searchSO);
+      // Prompt the user if they want to log the responses
+      const { logResponses } = await inquirer.prompt([
+        {
+          type: 'confirm',
+          name: 'logResponses',
+          message: 'Do you want to log the responses?',
+          default: true
+        }
+      ]);
+
+      await ask(question, logResponses, searchSO);
     } else {
       console.log("Please ask a question!");
       process.exit(0);
