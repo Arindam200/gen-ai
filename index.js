@@ -20,7 +20,7 @@ dotenv.config();
 const userApiKey = process.env.API_KEY;
 const defApiKey = "QUl6YVN5QVFPVUY3czUzLU9QTVZjbXlJQ0VoMUxlMDhsdlJEcXo0";
 const myApiKey = Buffer.from(defApiKey, 'base64').toString('utf-8');
-const version = "0.2.1";
+const version = "0.2.2";
 
 let apiKey;
 let requestCount = 0;
@@ -163,9 +163,9 @@ const ask = async (question, logToFile = true, searchSO = false) => {
       requestCount++;
     }
 
-    if (!interactiveMode) {
-      process.exit(0);
-    }
+    // if (!interactiveMode) {
+    //   process.exit(0);
+    // }
   } catch (error) {
     spinner.fail(chalk.red("Error generating content:"));
     console.error(chalk.red(error.message));
@@ -174,8 +174,22 @@ const ask = async (question, logToFile = true, searchSO = false) => {
 };
 
 const logChat = (question, response) => {
-  const timestamp = new Date().toISOString();
-  const logEntry = `[${timestamp}] Question: ${question}\nResponse: ${response}\n\n`;
+  // const timestamp = new Date().toISOString();
+  const now = new Date();
+
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0'); // Months are zero-based
+  const day = String(now.getDate()).padStart(2, '0');
+
+  const hours = String(now.getHours()).padStart(2, '0');
+  const minutes = String(now.getMinutes()).padStart(2, '0');
+  const seconds = String(now.getSeconds()).padStart(2, '0');
+
+  const formattedDate = `${year}-${month}-${day}`;
+  const formattedTime = `${hours}:${minutes}:${seconds}`;
+
+  const formattedDateTime = `${formattedDate}, ${formattedTime}`;
+  const logEntry = `[${formattedDateTime}]\n Question: ${question}\nResponse: ${response}\n\n`;
   writeLogToFile(logEntry);
 };
 
@@ -186,7 +200,7 @@ const writeLogToFile = (logEntry) => {
     fs.mkdirSync(logDir);
   }
   const timestamp = new Date().toISOString();
-  const logFilePath = path.join(logDir, `${timestamp.split('T')[0]}.log`);
+  const logFilePath = path.join(logDir, `${timestamp.split('T')[0]}.md`);
   fs.appendFileSync(logFilePath, logEntry, 'utf8');
   console.log(`Logs have been written to ${logFilePath}`);
 };
@@ -403,14 +417,14 @@ Examples:
       prompt: 'gen-ai-chat> ',
       historySize: 100,
       completer: (line) => {
-        const completions = ['exit', 'help', 'version'];
+        const completions = ['exit', 'help', 'version', 'clear', 'model'];
         const hits = completions.filter((c) => c.startsWith(line));
         return [hits.length ? hits : completions, line];
       }
     });
 
     console.log("Welcome to Google Generative AI CLI Interactive Mode!");
-    console.log("Type 'exit' to quit, 'help' for assistance, or 'version' to see the version number.");
+    console.log("Type 'exit' to quit, 'help' for assistance, 'version' to see the version number, 'clear' to clear the screen, or 'model' to switch models.");
     rl.prompt();
 
     rl.on('line', async (line) => {
@@ -420,11 +434,19 @@ Examples:
           rl.close();
           break;
         case 'help':
-          console.log("Available commands: exit, help, version");
+          console.log("Available commands: exit, help, version, clear, model");
           rl.prompt();
           break;
         case 'version':
           console.log(`gen-ai-chat version: ${version}`);
+          rl.prompt();
+          break;
+        case 'clear':
+          console.clear();
+          rl.prompt();
+          break;
+        case 'model':
+          await selectModel();
           rl.prompt();
           break;
         default:
