@@ -12,15 +12,16 @@ import chalk from "chalk";
 import inquirer from "inquirer";
 import { fileURLToPath } from 'url';
 import latestVersion from 'latest-version';
-import axios from 'axios'; // Import axios
+import axios from 'axios'; 
 import hljs from 'highlight.js';
+import pdf from 'pdf-parse';
 
 dotenv.config();
 
 const userApiKey = process.env.API_KEY;
 const defApiKey = "QUl6YVN5QVFPVUY3czUzLU9QTVZjbXlJQ0VoMUxlMDhsdlJEcXo0";
 const myApiKey = Buffer.from(defApiKey, 'base64').toString('utf-8');
-const version = "0.2.2";
+const version = "0.2.3";
 
 let apiKey;
 let requestCount = 0;
@@ -100,12 +101,18 @@ const formatResponse = (text) => {
     } else if (line.startsWith('**') && line.endsWith('**')) {
       formattedText += chalk.bold(line.slice(2, -2)) + '\n';
     } else {
-      // Regular text
       formattedText += line + '\n';
     }
   });
 
   return formattedText;
+};
+
+
+const readPDF = async (filePath) => {
+  const dataBuffer = fs.readFileSync(filePath);
+  const data = await pdf(dataBuffer);
+  return data.text;
 };
 
 const ask = async (question, logToFile = true, searchSO = false) => {
@@ -291,6 +298,7 @@ Options:
   --write-logs        Write in-memory logs to a file
   --choose-model      Choose a model interactively
   --stackoverflow, -s Search Stack Overflow for relevant links
+  --pdf, -p           Provide a PDF file path to include its content as context
 
 Examples:
   npx gen-ai-chat "What is the capital of France?"
@@ -300,6 +308,7 @@ Examples:
   npx gen-ai-chat --choose-model
   npx gen-ai-chat --write-logs
   npx gen-ai-chat "How to fix a TypeError in JavaScript?" --stackoverflow
+  npx gen-ai-chat "Explain the theory of relativity" --pdf document.pdf
 
 \x1b[31mWarning: If you don't use the -f or -d flags, the response might be ambiguous.\x1b[0m
 `;
@@ -410,6 +419,30 @@ Examples:
     }
   }
 
+  if (args.includes("--pdf") || args.includes("-p")) {
+    const pdfIndex = args.indexOf("--pdf") !== -1 ? args.indexOf("--pdf") + 1 : args.indexOf("-p") + 1;
+    if (pdfIndex < args.length) {
+      filePath = args[pdfIndex];
+      const spinner = ora('Reading PDF...').start();
+      try {
+        const pdfContent = await readPDF(path.resolve(filePath));
+        question = `${question}\n\nContext:\n${pdfContent}`;
+        spinner.succeed(chalk.green('PDF read successfully.'));
+
+        if (selectedModel !== "gemini-1.5-flash-latest") {
+          console.log(chalk.yellow("TIP: For better responses with PDF content, consider using the 'gemini-1.5-flash-latest' model."));
+        }
+      } catch (error) {
+        spinner.fail(chalk.red("Error reading PDF:"));
+        console.error(error);
+        process.exit(1);
+      }
+    } else {
+      console.log(chalk.red("Please provide a PDF file path after the --pdf or -p flag."));
+      process.exit(1);
+    }
+  }
+
   if (args.includes("-i") || args.includes("--interactive")) {
     const rl = readline.createInterface({
       input: process.stdin,
@@ -460,7 +493,6 @@ Examples:
     });
   } else {
     if (question) {
-      // Prompt the user if they want to log the responses
       const { logResponses } = await inquirer.prompt([
         {
           type: 'confirm',

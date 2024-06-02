@@ -1,13 +1,13 @@
 # Google Generative AI CLI
 
-This is a Node.js command-line interface (CLI) tool created by Arindam that interacts with the Google Generative AI API to generate content based on user input. The tool allows you to ask questions directly or provide context from files or directories.
+This is a Node.js command-line interface (CLI) tool created by [Arindam](https://x.com/Arindam_1729) that interacts with the Google Generative AI API to generate content based on user input. The tool allows you to ask questions directly or provide context from files, directories, or PDFs.
 
 ## Installation
 
-To install this package, you need to have Node.js and npm installed. You can install the package globally using npx:
+To install this package, you need to have Node.js and npm installed. You can install the package globally using npm:
 
 ```sh
-npx gen-ai-chat
+npm install -g gen-ai-chat
 ```
 
 ## Usage
@@ -34,6 +34,14 @@ To provide additional context from all files in a directory, use the `-d` flag f
 
 ```sh
 npx gen-ai-chat "Your question here" -d /path/to/your/directory
+```
+
+### Using a PDF for Context
+
+To provide additional context from a PDF file, use the `--pdf` or `-p` flag followed by the file path:
+
+```sh
+npx gen-ai-chat "Your question here" --pdf /path/to/your/file.pdf
 ```
 
 ### Interactive Mode
@@ -117,6 +125,12 @@ npx gen-ai-chat "Summarize the content of this file" -f ./example.txt
 npx gen-ai-chat "Summarize the content of these files" -d ./example-directory
 ```
 
+### Asking a Question with PDF Context
+
+```sh
+npx gen-ai-chat "Summarize the content of this PDF" --pdf ./example.pdf
+```
+
 ### Choosing a Model
 
 ```sh
@@ -135,7 +149,7 @@ npx gen-ai-chat "Your question here" --model gemini-1.5-flash-latest
 npx gen-ai-chat --write-logs
 ```
 
-This command will write all in-memory logs to a file in the `logs` directory.
+This command will write all in-memory logs to a file in the logs directory.
 
 ## Error Handling
 
