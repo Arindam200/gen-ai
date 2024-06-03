@@ -14,14 +14,15 @@ import { fileURLToPath } from 'url';
 import latestVersion from 'latest-version';
 import axios from 'axios'; 
 import hljs from 'highlight.js';
-import pdf from 'pdf-parse';
+// import pdf from 'pdf-parse';
+import crypto from 'crypto';
 
 dotenv.config();
 
 const userApiKey = process.env.API_KEY;
 const defApiKey = "QUl6YVN5QVFPVUY3czUzLU9QTVZjbXlJQ0VoMUxlMDhsdlJEcXo0";
 const myApiKey = Buffer.from(defApiKey, 'base64').toString('utf-8');
-const version = "0.2.3";
+const version = "0.2.4";
 
 let apiKey;
 let requestCount = 0;
@@ -63,6 +64,66 @@ const selectModel = async () => {
   selectedModel = await promptUserForModel();
   console.log(chalk.green("Selected model:") + chalk.white(selectedModel));
 };
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+// Cache file path
+const cacheFilePath = path.resolve(__dirname, 'cache.json');
+
+// Function to generate a unique cache key
+const generateCacheKey = (query, context) => {
+  const normalizedQuery = query.toLowerCase().trim(); // Simple normalization
+  const hash = crypto.createHash('sha256');
+  hash.update(normalizedQuery + JSON.stringify(context));
+  return hash.digest('hex');
+};
+
+// Function to load the cache from the file
+const loadCache = () => {
+  if (fs.existsSync(cacheFilePath)) {
+    const data = fs.readFileSync(cacheFilePath, 'utf-8');
+    return JSON.parse(data);
+  }
+  return {};
+};
+
+// Function to save the cache to the file
+const saveCache = (cache) => {
+  fs.writeFileSync(cacheFilePath, JSON.stringify(cache, null, 2), 'utf-8');
+};
+
+// Function to check the cache
+const checkCache = (key, cache) => {
+  return cache[key];
+};
+
+// Function to insert into the cache
+const insertIntoCache = (key, value, cache) => {
+  cache[key] = {
+    value,
+    timestamp: Date.now()
+  };
+  saveCache(cache);
+};
+
+// Function to expire old cache entries
+const expireCache = (cache, maxAge) => {
+  const now = Date.now();
+  for (const key in cache) {
+    if (now - cache[key].timestamp > maxAge) {
+      delete cache[key];
+    }
+  }
+  saveCache(cache);
+};
+
+// Periodically expire old cache entries
+// setInterval(() => {
+//   const cache = loadCache();
+//   expireCache(cache, 60 * 60 * 1000); // 1 hour
+// }, 60 * 60 * 1000); // 1 hour
+
+
 
 const searchStackOverflow = async (query) => {
   const spinner = ora('Searching Stack Overflow...').start();
@@ -108,17 +169,36 @@ const formatResponse = (text) => {
   return formattedText;
 };
 
+// const filePath = path.resolve(__dirname, 'data', '05-versions-space.pdf');
 
-const readPDF = async (filePath) => {
-  const dataBuffer = fs.readFileSync(filePath);
-  const data = await pdf(dataBuffer);
-  return data.text;
-};
+// const readPDF = async (filePath) => {
+//   try {
+//     if (!fs.existsSync(filePath)) {
+//       throw new Error(`File not found: ${filePath}`);
+//     }
+//     const dataBuffer = fs.readFileSync(filePath);
+//     const data = await pdf(dataBuffer);
+//     return data.text;
+//   } catch (error) {
+//     console.error(`Error reading PDF: ${error.message}`);
+//     process.exit(1);
+//   }
+// };
 
-const ask = async (question, logToFile = true, searchSO = false) => {
+const ask = async (question, context = {}, logToFile = true, searchSO = false) => {
   if (!question) {
     console.log(chalk.red("You must enter a prompt when calling this function"));
     process.exit(1);
+  }
+
+  const cache = loadCache();
+  const cacheKey = generateCacheKey(question, context);
+  const cachedResponse = checkCache(cacheKey, cache);
+
+  if (cachedResponse) {
+    console.log(chalk.blue.bold("\nCached Response:\n") + chalk.white(cachedResponse.value));
+    // return;
+    process.exit(0);
   }
 
   const spinner = ora('Generating response...').start();
@@ -150,6 +230,9 @@ const ask = async (question, logToFile = true, searchSO = false) => {
     const formattedText = formatResponse(text);
     console.log(chalk.blue.bold("\nResponse:\n") + chalk.white(formattedText));
 
+    // Insert the response into the cache
+    insertIntoCache(cacheKey, formattedText, cache);
+
     // Log the question and response
     if (logToFile) {
       logChat(question, text);
@@ -170,9 +253,6 @@ const ask = async (question, logToFile = true, searchSO = false) => {
       requestCount++;
     }
 
-    // if (!interactiveMode) {
-    //   process.exit(0);
-    // }
   } catch (error) {
     spinner.fail(chalk.red("Error generating content:"));
     console.error(chalk.red(error.message));
@@ -419,29 +499,29 @@ Examples:
     }
   }
 
-  if (args.includes("--pdf") || args.includes("-p")) {
-    const pdfIndex = args.indexOf("--pdf") !== -1 ? args.indexOf("--pdf") + 1 : args.indexOf("-p") + 1;
-    if (pdfIndex < args.length) {
-      filePath = args[pdfIndex];
-      const spinner = ora('Reading PDF...').start();
-      try {
-        const pdfContent = await readPDF(path.resolve(filePath));
-        question = `${question}\n\nContext:\n${pdfContent}`;
-        spinner.succeed(chalk.green('PDF read successfully.'));
+  // if (args.includes("--pdf") || args.includes("-p")) {
+  //   const pdfIndex = args.indexOf("--pdf") !== -1 ? args.indexOf("--pdf") + 1 : args.indexOf("-p") + 1;
+  //   if (pdfIndex < args.length) {
+  //     filePath = args[pdfIndex];
+  //     const spinner = ora('Reading PDF...').start();
+  //     try {
+  //       const pdfContent = await readPDF(path.resolve(filePath));
+  //       question = `${question}\n\nContext:\n${pdfContent}`;
+  //       spinner.succeed(chalk.green('PDF read successfully.'));
 
-        if (selectedModel !== "gemini-1.5-flash-latest") {
-          console.log(chalk.yellow("TIP: For better responses with PDF content, consider using the 'gemini-1.5-flash-latest' model."));
-        }
-      } catch (error) {
-        spinner.fail(chalk.red("Error reading PDF:"));
-        console.error(error);
-        process.exit(1);
-      }
-    } else {
-      console.log(chalk.red("Please provide a PDF file path after the --pdf or -p flag."));
-      process.exit(1);
-    }
-  }
+  //       if (selectedModel !== "gemini-1.5-flash-latest") {
+  //         console.log(chalk.yellow("TIP: For better responses with PDF content, consider using the 'gemini-1.5-flash-latest' model."));
+  //       }
+  //     } catch (error) {
+  //       spinner.fail(chalk.red("Error reading PDF:"));
+  //       console.error(error);
+  //       process.exit(1);
+  //     }
+  //   } else {
+  //     console.log(chalk.red("Please provide a PDF file path after the --pdf or -p flag."));
+  //     process.exit(1);
+  //   }
+  // }
 
   if (args.includes("-i") || args.includes("--interactive")) {
     const rl = readline.createInterface({
